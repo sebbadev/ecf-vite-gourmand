@@ -1,23 +1,30 @@
-# Import necessary tools from SQLAlchemy
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-# Database URL: Replace with your actual credentials
-# Format: postgresql://user:password@postgresserver/db_name
-SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/vite_gourmand"
+# Load variables from the .env file
+load_dotenv()
 
-# The Engine is the starting point for any SQLAlchemy application
-# it's the "plumbing" that maintains the connection pool
+# We get the database URL from an environment variable for security
+# If not found, it defaults to a local postgres (useful for dev)
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://postgres:password@localhost/vite_gourmand"
+)
+
+# Create the Engine: The bridge between Python and PostgreSQL
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-# Each instance of the SessionLocal class will be a database session
+# SessionLocal: Each instance will be a database "conversation"
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# We will inherit from this class to create each of the database models
+# Base: The class our models will inherit from
 Base = declarative_base()
 
-# Dependency to get the DB session for each request
+# Dependency: This function will provide a DB session to our API routes
+# and ensure the connection is closed after the request is finished
 def get_db():
     db = SessionLocal()
     try:
