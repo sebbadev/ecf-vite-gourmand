@@ -4,7 +4,7 @@ from ..database import get_db
 from ..models import models
 from ..schemas import schemas
 from ..core import security
-from ..core.auth import oauth2_scheme
+from ..core.auth import get_current_user
 
 router = APIRouter()
 
@@ -42,9 +42,6 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.get("/me", response_model=schemas.UserResponse)
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """
-    This route is PROTECTED. 
-    The 'Depends(oauth2_scheme)' is what triggers the padlock icon.
-    """
-    return {"message": "You are authorized!"}
+def read_users_me(current_user: models.User = Depends(get_current_user)):
+
+    return current_user
