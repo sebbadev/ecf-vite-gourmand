@@ -1,7 +1,11 @@
 import os
+from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 from jose import jwt
 from dotenv import load_dotenv
+
+# Update the tokenUrl to match your main.py prefix + router path
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 load_dotenv()
 

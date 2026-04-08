@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
 from .models import models # This ensures models are known to SQLAlchemy
-from .routers import menus
+from .routers import users, menus, auth
 
 # This command tells SQLAlchemy to create the tables in PostgreSQL 
 # if they don't exist yet. Very useful for the first run!
@@ -10,6 +10,8 @@ models.Base.metadata.create_all(bind=engine)
 
 # Initialize the FastAPI app
 app = FastAPI(title="Vite & Gourmand API")
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(menus.router, prefix="/api/menus", tags=["Menus"])
 
 @app.get("/")
