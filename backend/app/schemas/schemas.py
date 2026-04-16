@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import List, Optional
 from datetime import datetime, date, time
-from models import UserRole, OrderStatus, PaymentStatus, Equipment, DishType, Rating
+from app.models import UserRole, OrderStatus, PaymentStatus, Equipment, DishType, Rating
 
 # --- 1. Base Schemas (Common attributes) ---
 

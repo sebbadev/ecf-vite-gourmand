@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .database import engine, Base, get_db
-from .models import models # This ensures models are known to SQLAlchemy
-from .routers import users, menus, auth
+from app.models import models
+from app.routers import users, menus, auth
 
 # This command tells SQLAlchemy to create the tables in PostgreSQL 
 # if they don't exist yet. Very useful for the first run!

@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models import models
+from app.database import get_db
+from app.models import models
 
 # Update the tokenUrl to match your main.py prefix + router path
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -47,7 +47,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
 
     # 2. Fetch the user from the database
-    user = db.query(models.User).filter(models.User.email == email).first()
+    user = db.query(models.Utilisateur).filter(models.Utilisateur.email == email).first()
     if user is None:
         raise credentials_exception
     
