@@ -1,57 +1,89 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
-from datetime import date, time, datetime
+from pydantic import BaseModel, EmailStr, ConfigDict
+from typing import List, Optional
+from datetime import datetime, date, time
+from models import UserRole, OrderStatus, PaymentStatus, Equipment, DishType, Rating
 
-# --- USER SCHEMAS ---
+# --- 1. Base Schemas (Common attributes) ---
 
-class UserBase(BaseModel):
-    """Common attributes for Users"""
-    email: EmailStr
-    prenom: Optional[str] = None
-    nom: Optional[str] = None
+class ThemeBase(BaseModel):
+    libelle: str
 
-class UserCreate(UserBase):
-    """Attributes needed to create a user (Signup)"""
-    password: str = Field(..., min_length=8) # Requirement for security
+class AllergeneBase(BaseModel):
+    libelle: str
 
-class UserResponse(UserBase):
-    """Attributes returned to the frontend (Never return the password!)"""
-    id: int
-    role: str
-    created_at: datetime
+class RegimeBase(BaseModel):
+    libelle: str
 
-    class Config:
-        from_attributes = True # Allows Pydantic to read SQLAlchemy models
+# --- 2. Plat (Dish) Schemas ---
 
-# --- MENU SCHEMAS ---
-
-class MenuBase(BaseModel):
-    title: str
-    prix_par_personne: float
-    description: Optional[str] = None
-    is_active: bool = True
-
-class MenuResponse(MenuBase):
-    menu_id: int
+class PlatBase(BaseModel):
+    titre: str
+    type_de_plat: DishType
     images_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+class PlatRead(PlatBase):
+    plat_id: int
+    allergenes: List[AllergeneBase] = []
+    regimes: List[RegimeBase] = []
+    
+    model_config = ConfigDict(from_attributes=True) # Allows Pydantic to read SQLAlchemy models
 
-# --- ORDER SCHEMAS ---
+# --- 3. Menu Schemas ---
 
-class OrderCreate(BaseModel):
-    """What Angular sends when a customer clicks 'Order'"""
+class MenuBase(BaseModel):
+    titre: str
+    nombre_personnes_min: int
+    prix_par_personne: float
+    description: str
+    quantite_disponible: int
+    images_url: str
+    is_active: bool = True
+
+class MenuRead(MenuBase):
+    menu_id: int
+    plats: List[PlatRead] = []
+    # These use the @property logic we wrote in models.py
+    allergenes: List[AllergeneBase] 
+    regimes_valides: List[str] 
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# --- 4. User Schemas ---
+
+class UserBase(BaseModel):
+    email: EmailStr
+    prenom: str
+    nom: str
+    telephone: Optional[str] = None
+    role: UserRole = UserRole.CLIENT
+
+class UserCreate(UserBase):
+    password: str # Used only for registration
+
+class UserRead(UserBase):
+    user_id: int
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# --- 5. Order Schemas ---
+
+class CommandeDetailBase(BaseModel):
+    menu_id: int
+    quantite: int
+    prix_applique: float
+
+class CommandeBase(BaseModel):
     date_prestation: date
-    heure_livraison: time
-    nombre_personnes: int
-    menu_ids: List[int] # List of menus being ordered
+    heure_livraison: datetime
+    statut: OrderStatus = OrderStatus.PENDING
+    statut_materiel: Equipment = Equipment.INCLUDED
 
-class OrderResponse(BaseModel):
-    id: int
+class CommandeRead(CommandeBase):
+    commande_id: int
     numero_commande: str
     prix_total: float
-    statut: str
+    statut_paiement: PaymentStatus
+    details: List[CommandeDetailBase]
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

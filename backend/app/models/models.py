@@ -1,152 +1,229 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table, Time, TIMESTAMP, text, Float, SmallInteger, Date, Text
-from sqlalchemy.orm import relationship
-from ..database import Base
+from sqlalchemy import (
+    Column, Integer, String, Float, Boolean, Text, 
+    DateTime, Date, Time, ForeignKey, Enum, Table, func
+)
+from sqlalchemy.orm import relationship, DeclarativeBase
+import enum
 
-# --- JOIN TABLES (Many-to-Many Bridges) ---
+# --- 1. Python Enums for Business Logic & Type Safety ---
 
-# Link between Menus and Plats
-menu_plats = Table(
-    "menus_plats",
-    Base.metadata,
+class DishType(enum.Enum):
+    ENTREE = "Entrée"
+    MAIN_DISH = "Plat principal"
+    ACCOMPAGNEMENT = "Accompagnement"
+    DESSERT = "Dessert"
+
+class Equipment(enum.Enum):
+    INCLUDED = "Inclus"
+    NON_INCLUDED = "Non inclus"
+    RETURNED = "Retourné"
+
+class Rating(enum.Enum):
+    CRITICAL = 'Critique'
+    TO_IMPROVE = 'À améliorer'
+    ACCEPTABLE = 'Correct'
+    GOOD = 'Bien'
+    EXCELLENT = 'Excellent'
+
+class OrderStatus(enum.Enum):
+    PENDING = "En attente de validation"
+    CONFIRMED = "Acceptée"
+    CANCELLED = "Annulée"
+    PREPARING = "En préparation"
+    READY = "En cours de livraison"
+    DELIVERED = "Livrée"
+    COMPLETED = "Terminée"
+
+class PaymentStatus(enum.Enum):    
+    DUE = "En attente de règlement"
+    CANCELLED = "Annulée"
+    PAID = "Réglée"
+
+class ReviewStatus(enum.Enum):
+    PENDING = "En attente"
+    APPROVED = "Approuvé"
+    ANSWERED = "Répondu"
+    REJECTED = "Rejeté"
+
+class UserRole(enum.Enum):
+    ADMIN = "Administrateur"
+    CHEF = "Chef"
+    EMPLOYE = "Employé"
+    CLIENT = "Client"
+
+# --- 2. Base & Association Tables ---
+
+class Base(DeclarativeBase):
+    pass
+
+# Association tables for Many-to-Many relationships
+menus_plats = Table(
+    "menus_plats", Base.metadata,
     Column("menu_id", Integer, ForeignKey("menus.menu_id", ondelete="CASCADE"), primary_key=True),
     Column("plat_id", Integer, ForeignKey("plats.plat_id", ondelete="CASCADE"), primary_key=True),
 )
 
-# Link between Plats and Allergenes
-plats_allergenes = Table(
-    "plats_allergenes",
-    Base.metadata,
-    Column("plat_id", Integer, ForeignKey("plats.plat_id", ondelete="CASCADE"), primary_key=True),
-    Column("allergene_id", Integer, ForeignKey("allergenes.allergene_id", ondelete="CASCADE"), primary_key=True),
-)
-
-# Link between Menus and Themes
 menus_themes = Table(
-    "menus_themes",
-    Base.metadata,
+    "menus_themes", Base.metadata,
     Column("menu_id", Integer, ForeignKey("menus.menu_id", ondelete="CASCADE"), primary_key=True),
     Column("theme_id", Integer, ForeignKey("themes.theme_id", ondelete="CASCADE"), primary_key=True),
 )
 
-# --- CORE MODELS ---
+plats_allergenes = Table(
+    "plats_allergenes", Base.metadata,
+    Column("plat_id", Integer, ForeignKey("plats.plat_id", ondelete="CASCADE"), primary_key=True),
+    Column("allergene_id", Integer, ForeignKey("allergenes.allergene_id", ondelete="CASCADE"), primary_key=True),
+)
 
-class User(Base):
+plats_regimes = Table(
+    "plats_regimes", Base.metadata,
+    Column("plat_id", Integer, ForeignKey("plats.plat_id", ondelete="CASCADE"), primary_key=True),
+    Column("regime_id", Integer, ForeignKey("regimes.regime_id", ondelete="CASCADE"), primary_key=True),
+)
+
+plats_themes = Table(
+    "plats_themes", Base.metadata,
+    Column("plat_id", Integer, ForeignKey("plats.plat_id", ondelete="CASCADE"), primary_key=True),
+    Column("theme_id", Integer, ForeignKey("themes.theme_id", ondelete="CASCADE"), primary_key=True),
+)
+
+# --- 3. Models ---
+
+class Utilisateur(Base):
     __tablename__ = "utilisateurs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(50), unique=True, index=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)  # Long enough for Bcrypt/Argon2
-    prenom = Column(String(50))
-    nom = Column(String(50))
+    user_id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(50), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    prenom = Column(String(50), nullable=False)
+    nom = Column(String(50), nullable=False)
     telephone = Column(String(50))
-    adresse = Column(String(50))
+    adresse = Column(String(255))
     code_postal = Column(String(50))
     ville = Column(String(50))
-    role = Column(String(20), server_default="Customer") # Admin, Employee, Customer
-    
-    # Audit fields
-    created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    updated_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
+    pays = Column(String(50))
+    # Using the UserRole Enum class
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.CLIENT)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     is_deleted = Column(Boolean, default=False)
 
-    # Relationships
-    orders = relationship("Order", back_populates="owner")
-    reviews = relationship("Review", back_populates="author")
-
+    commandes = relationship("Commande", back_populates="client")
+    avis = relationship("Avis", back_populates="auteur")
 
 class Menu(Base):
     __tablename__ = "menus"
-
     menu_id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(50), nullable=False)
-    nombre_personnes_min = Column(Integer, default=1)
+    titre = Column(String(50), nullable=False)
+    nombre_personnes_min = Column(Integer, nullable=False)
     prix_par_personne = Column(Float, nullable=False)
-    description = Column(Text)
-    quantite_disponible = Column(Integer)
-    images_url = Column(String(255))
-    is_active = Column(Boolean, default=True)
-    
-    # Foreign Key to Regime (Many-to-One)
-    regime_id = Column(Integer, ForeignKey("regimes.regime_id"))
-    
-    # Relationships
-    regime = relationship("Regime", back_populates="menus")
-    plats = relationship("Plat", secondary=menu_plats, back_populates="menus")
-    themes = relationship("Theme", secondary=menus_themes, back_populates="menus")
+    description = Column(Text, nullable=False)
+    quantite_disponible = Column(Integer, nullable=False)
+    images_url = Column(String(255), nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default='true')
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_deleted = Column(Boolean, default=False)
 
+    plats = relationship("Plat", secondary=menus_plats, back_populates="menus")
+    themes = relationship("Theme", secondary=menus_themes, back_populates="menus")
+    avis = relationship("Avis", back_populates="menu")
+
+    @property
+    def allergenes(self):
+        allergen_list = []
+        for plat in self.plats:
+            for allergene in plat.allergenes:
+                if allergene not in allergen_list:
+                    allergen_list.append(allergene)
+        return allergen_list
+
+    @property
+    def regimes_valides(self):
+        if not self.plats: return []
+        common_regimes = {r.libelle for r in self.plats[0].regimes}
+        for plat in self.plats[1:]:
+            common_regimes &= {r.libelle for r in plat.regimes}
+            if not common_regimes: break
+        return list(common_regimes)
 
 class Plat(Base):
     __tablename__ = "plats"
-
     plat_id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(50), nullable=False)
-    categorie = Column(String(20)) # "entrée", "principal", "dessert"
+    titre = Column(String(50), nullable=False)
+    type_de_plat = Column(Enum(DishType), nullable=False) # Linked to DishType Enum
     images_url = Column(String(255))
-    
-    # Relationships
-    menus = relationship("Menu", secondary=menu_plats, back_populates="plats")
+
+    menus = relationship("Menu", secondary=menus_plats, back_populates="plats")
     allergenes = relationship("Allergene", secondary=plats_allergenes, back_populates="plats")
+    regimes = relationship("Regime", secondary=plats_regimes, back_populates="plats")
+    themes = relationship("Theme", secondary=plats_themes, back_populates="plats")
 
-
-class Order(Base):
+class Commande(Base):
     __tablename__ = "commandes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    numero_commande = Column(String(50), unique=True, nullable=False)
-    user_id = Column(Integer, ForeignKey("utilisateurs.id"))
+    commande_id = Column(Integer, primary_key=True, index=True)
+    numero_commande = Column(String(50), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("utilisateurs.user_id"), nullable=False)
     date_prestation = Column(Date, nullable=False)
-    heure_livraison = Column(Time)
+    heure_livraison = Column(DateTime(timezone=True), nullable=False)
     prix_total = Column(Float, nullable=False)
-    remise_appliquee = Column(Float, default=0.0) # Handle that 10% discount
-    statut = Column(String(50), default="en attente de règlement")
-    
-    # Audit & Tracking
-    created_at = Column(TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
-    owner = relationship("User", back_populates="orders")
-    details = relationship("OrderDetails", back_populates="order")
+    remise_appliquee = Column(Float)
+    statut = Column(Enum(OrderStatus), default=OrderStatus.PENDING)
+    date_commande = Column(DateTime(timezone=True), server_default=func.now())
+    statut_paiement = Column(Enum(PaymentStatus), default=PaymentStatus.DUE)
+    statut_materiel = Column(Enum(Equipment), default=Equipment.INCLUDED)
+    is_deleted = Column(Boolean, default=False)
 
+    client = relationship("Utilisateur", back_populates="commandes")
+    details = relationship("CommandeDetail", back_populates="commande")
 
-class OrderDetails(Base):
+class CommandeDetail(Base):
     __tablename__ = "commande_details"
-
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("commandes.id"))
-    menu_id = Column(Integer, ForeignKey("menus.menu_id"))
-    quantity = Column(Integer, nullable=False)
-    prix_applique = Column(Float, nullable=False) # Important: Price at time of purchase
-
-    order = relationship("Order", back_populates="details")
-
-
-class Review(Base):
-    __tablename__ = "avis"
-
-    id = Column(Integer, primary_key=True, index=True)
-    note = Column(SmallInteger) # 0 to 5
-    description = Column(Text)
-    user_id = Column(Integer, ForeignKey("utilisateurs.id"))
-    menu_id = Column(Integer, ForeignKey("menus.menu_id"))
-    statut = Column(String(20), default="en attente") # "en attente", "accepté", "rejeté"
+    detail_id = Column(Integer, primary_key=True, index=True)
+    commande_id = Column(Integer, ForeignKey("commandes.commande_id"), nullable=False)
+    menu_id = Column(Integer, ForeignKey("menus.menu_id"), nullable=False)
+    quantite = Column(Integer, nullable=False)
+    prix_applique = Column(Float, nullable=False)
     
-    author = relationship("User", back_populates="reviews")
+    commande = relationship("Commande", back_populates="details")
 
+class Avis(Base):
+    __tablename__ = "avis"
+    avis_id = Column(Integer, primary_key=True, index=True)
+    description = Column(Text, nullable=False)
+    user_id = Column(Integer, ForeignKey("utilisateurs.user_id"))
+    menu_id = Column(Integer, ForeignKey("menus.menu_id"))
+    statut = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING)
+    qualite = Column(Enum(Rating))
+    service = Column(Enum(Rating))
+    prix = Column(Enum(Rating))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_deleted = Column(Boolean, default=False)
 
-# --- HELPER TABLES (Regimes, Themes, Allergenes) ---
+    auteur = relationship("Utilisateur", back_populates="avis")
+    menu = relationship("Menu", back_populates="avis")
 
-class Regime(Base):
-    __tablename__ = "regimes"
-    regime_id = Column(Integer, primary_key=True)
-    libelle = Column(String(50), nullable=False)
-    menus = relationship("Menu", back_populates="regime")
-
-class Theme(Base):
-    __tablename__ = "themes"
-    theme_id = Column(Integer, primary_key=True)
-    libelle = Column(String(50), nullable=False)
-    menus = relationship("Menu", secondary=menus_themes, back_populates="themes")
+class Horaire(Base):
+    __tablename__ = "horaires"
+    horaire_id = Column(Integer, primary_key=True)
+    jour = Column(String(50), nullable=False)
+    heure_ouverture = Column(Time, nullable=False)
+    heure_fermeture = Column(Time, nullable=False)
 
 class Allergene(Base):
     __tablename__ = "allergenes"
     allergene_id = Column(Integer, primary_key=True)
     libelle = Column(String(50), nullable=False)
     plats = relationship("Plat", secondary=plats_allergenes, back_populates="allergenes")
+
+class Regime(Base):
+    __tablename__ = "regimes"
+    regime_id = Column(Integer, primary_key=True)
+    libelle = Column(String(50), nullable=False)
+    plats = relationship("Plat", secondary=plats_regimes, back_populates="regimes")
+
+class Theme(Base):
+    __tablename__ = "themes"
+    theme_id = Column(Integer, primary_key=True)
+    libelle = Column(String(50), nullable=False)
+    menus = relationship("Menu", secondary=menus_themes, back_populates="themes")
+    plats = relationship("Plat", secondary=plats_themes, back_populates="themes")
