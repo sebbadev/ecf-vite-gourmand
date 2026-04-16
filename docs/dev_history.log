@@ -1,0 +1,44 @@
+02-04-2026
+- Analyse requirements and gather information for project.
+- Create Project Overview & Context document to outline the project's goals, scope, and requirements.
+
+
+
+- Inquire and decide the environment and technologies.
+- Define stategies (back to front, Python, FastAPI, SQLAlchemy).
+
+03-04-2026
+- Set up development environment and tools (WSL: Ubuntu, VS Code, Python, PostgreSQL).
+- Create project folder structure and initialize version control (Bash & Git).
+- Research and select database management system (DBMS) for the project (PostgreSQL).
+
+06-04-2026
+- Start project conception and design phase.
+- Create initial project conception document outlining the project's goals, scope, and requirements.
+- Initialize project management system.
+- Initialize project plan.
+- Initialize project documentation.
+
+13-04-2026
+- Initial DB schema design and planning.
+- Initialisation DB tables and columns based on the designed schema.
+
+14-04-2026
+- Review and refine DB schema design.
+- Add columns and tables based on review.
+- Update types, defaults and nullability of columns based on review.
+- Write SQL scripts for querying and manipulating the database.
+
+15-04-2026
+- Finalize DB Tables, columns, types, and foreign keys.
+- Rename foreign keys to follow a consistent naming convention.
+- Synchronize Conception Data Model to reflect the finalized DB schema.
+- Creation migration file, using pg_dump : docs/create_db.sql.
+- Migration test to create tables in a new database.
+
+16-04-2026
+- Update docs/dev_history.log and update from the beginning of the project.
+- Update .gitignore to ignore temp/ folder.
+- commit changes to version control : "chores: update dev history log and .gitignore"
+- Commit migration file to version control.
+- Synchronize Python models with the finalized DB schema.
