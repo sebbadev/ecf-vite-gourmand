@@ -13,5 +13,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Folders
+# Other folders
 temp/
+admin/

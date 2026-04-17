@@ -37,8 +37,21 @@
 - Migration test to create tables in a new database.
 
 16-04-2026
-- Update docs/dev_history.log and update from the beginning of the project.
-- Update .gitignore to ignore temp/ folder.
-- commit changes to version control : "chores: update dev history log and .gitignore"
-- Commit migration file to version control.
+- Update docs/dev_history.log and complete from the beginning of the project.
+- Update .gitignore to ignore temp/ folders.
+- Commit changes to version control : "chores: update dev history log and .gitignore"
+- Commit migration file DB to version control.
 - Synchronize Python models with the finalized DB schema.
+- Update schemas.py with new db schema and models.
+- Test localhost:8000/docs.: test ok.
+- Initiate a code.doc file with all code, folders and files, structure & content, for AI references.
+
+17-04-2026
+- Install and discover GitGraph.
+- Learn about senior Git practices : modify commit history, rebase, best practices.
+- Learn about Gem configuration & instructions.
+- Create a clean slate plan - with documentation
+- Documentation :  set up documentation file for new project creation.
+- Automation : scripts/generate_tree.sh to generate the project tree structure.
+- Automation : scripts/scaffolding.sh : to create folders, files, and basic content for a new project.
+- Automation : scripts/generate_tree.sh & scripts/generate_code_doc.sh.
